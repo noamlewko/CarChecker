@@ -19,8 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.noamlewkowicz.carchecker.R
 
 /**
  * Displays the branded header of the Car Checker screen.
@@ -62,7 +64,7 @@ fun CarCheckerHeader() {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "C",
+                    text = stringResource(R.string.header_logo_initial),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White
@@ -71,7 +73,7 @@ fun CarCheckerHeader() {
 
             Column {
                 Text(
-                    text = "Car Checker",
+                    text = stringResource(R.string.header_title),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White
@@ -80,7 +82,7 @@ fun CarCheckerHeader() {
                 Spacer(modifier = Modifier.height(3.dp))
 
                 Text(
-                    text = "Official Israeli vehicle information",
+                    text = stringResource(R.string.header_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.82f)
                 )

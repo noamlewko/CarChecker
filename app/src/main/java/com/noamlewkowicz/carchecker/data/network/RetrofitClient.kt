@@ -1,5 +1,6 @@
 package com.noamlewkowicz.carchecker.data.network
 
+import com.noamlewkowicz.carchecker.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -19,11 +20,18 @@ object RetrofitClient {
     private const val CALL_TIMEOUT_SECONDS = 45L
 
     /**
-     * Logs request and response details during development.
+     * Logs request and response details during development only.
+     *
+     * Body-level logging is disabled in release builds to avoid exposing
+     * response contents and to keep release performance unaffected.
      */
     private val loggingInterceptor =
         HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = if (BuildConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.BODY
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
         }
 
     /**

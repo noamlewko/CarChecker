@@ -1,3 +1,42 @@
 <resources>
     <string name="app_name">CarChecker</string>
+
+    <!-- Header -->
+    <string name="header_logo_initial">C</string>
+    <string name="header_title">Car Checker</string>
+    <string name="header_subtitle">Official Israeli vehicle information</string>
+
+    <!-- License input -->
+    <string name="license_number_label">License number</string>
+    <string name="license_plate_country_code">IL</string>
+    <string name="license_number_placeholder">28-367-902</string>
+
+    <!-- Status states -->
+    <string name="status_idle_title">Ready to search</string>
+    <string name="status_idle_message">Enter a valid 7 or 8 digit license number.</string>
+    <string name="status_not_found_title">Vehicle not found</string>
+    <string name="status_not_found_message">No vehicle was found for this license number.</string>
+    <string name="status_error_title">Unable to complete the search</string>
+
+    <!-- Loading -->
+    <string name="loading_title">Checking vehicle details...</string>
+    <string name="loading_message">Retrieving vehicle and parking badge information</string>
+
+    <!-- Result card -->
+    <string name="result_title">Vehicle Found</string>
+    <string name="result_subtitle">Data received successfully</string>
+    <string name="status_pill_found">Found</string>
+    <string name="label_manufacturer">Manufacturer</string>
+    <string name="label_color">Color</string>
+    <string name="label_vehicle_type">Vehicle type</string>
+    <string name="unknown_value">Unknown</string>
+    <string name="vehicle_type_private">Private</string>
+    <string name="vehicle_type_commercial">Commercial</string>
+
+    <!-- Disabled parking badge -->
+    <string name="disabled_badge_title">Disabled parking badge</string>
+    <string name="disabled_badge_present">Badge registered for this vehicle</string>
+    <string name="disabled_badge_absent">No registered badge was found</string>
+    <string name="answer_yes">Yes</string>
+    <string name="answer_no">No</string>
 </resources>

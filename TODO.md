@@ -1,31 +1,37 @@
 # CarChecker
 
 ## UI
-- [ ] Create screen layout
-- [ ] Add license input
-- [ ] Display car information
-- [ ] Show loading
-- [ ] Show error state
+- [x] Create screen layout
+- [x] Add license input
+- [x] Display car information
+- [x] Show loading
+- [x] Show error state
 
 ## Architecture
-- [ ] Create ViewModel
-- [ ] Create Repository
+- [x] Create ViewModel
+- [x] Create Repository
 
 ## Network
-- [ ] Add Retrofit
-- [ ] Vehicle API
-- [ ] Disabled Badge API
+- [x] Add Retrofit
+- [x] Vehicle API
+- [x] Disabled Badge API
 
 ## Logic
-- [ ] Search on input
-- [ ] Parallel API requests
-- [ ] Handle errors
+- [x] Search on input
+- [x] Parallel API requests
+- [x] Handle errors
 
 ## Tests
-- [ ] ViewModel tests
-- [ ] Repository tests
+- [x] ViewModel tests
+- [x] Repository tests
 - [ ] Compose UI tests
 
 ## Polish
-- [ ] README
-- [ ] Final UI improvements
+- [x] README
+- [x] Final UI improvements
+
+## Bonus (not included in this submission)
+- [ ] Offline-first architecture with Room
+- [ ] Daily sync via foreground service
+
+Descoped due to time constraints. See "Possible Next Steps" in README for the intended approach.

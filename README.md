@@ -110,14 +110,18 @@ The application handles:
 
 ---
 
-## Future Improvements
+## Possible Next Steps
 
-- Offline-first architecture
-- Room database
-- Daily synchronization
-- Foreground service
-- Additional UI tests
-- Dependency Injection (Hilt/Koin)
+The assignment's bonus (offline-first architecture) was not included in this submission due to time constraints. The intended approach:
+
+- Cache each looked-up vehicle in a Room database, keyed by license number.
+- Serve cached results first, then refresh from the API.
+- Use a WorkManager periodic job promoted to a foreground service to refresh previously-searched vehicles once a day.
+
+Other improvements worth considering:
+
+- Compose UI tests
+- Dependency injection (Hilt/Koin)
 
 ---
 

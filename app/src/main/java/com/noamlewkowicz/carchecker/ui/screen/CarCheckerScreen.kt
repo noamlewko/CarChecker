@@ -1,12 +1,5 @@
 package com.noamlewkowicz.carchecker.ui.screen
 
-import androidx.compose.foundation.layout.size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.DirectionsCar
-import androidx.compose.material3.Icon
-import androidx.compose.material.icons.rounded.Factory
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -18,14 +11,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.DirectionsCar
+import androidx.compose.material.icons.rounded.Factory
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,19 +29,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.noamlewkowicz.carchecker.R
 import com.noamlewkowicz.carchecker.data.model.CarDetails
+import com.noamlewkowicz.carchecker.ui.components.CarCheckerHeader
+import com.noamlewkowicz.carchecker.ui.components.LicensePlateTextField
 import com.noamlewkowicz.carchecker.viewmodel.CarCheckerUiState
 import com.noamlewkowicz.carchecker.viewmodel.CarCheckerViewModel
-import com.noamlewkowicz.carchecker.ui.components.LicensePlateTextField
-import com.noamlewkowicz.carchecker.ui.components.CarCheckerHeader
+
 /**
  * Connects the screen to its ViewModel and collects lifecycle-aware state.
  */
@@ -70,7 +69,7 @@ fun CarCheckerRoute(
  * Displays the complete Car Checker screen.
  *
  * The composable receives its state and callbacks as parameters, keeping it
- * independent from the ViewModel and easier to preview and test.
+ * independent of the ViewModel and easier to preview and test.
  */
 @Composable
 fun CarCheckerScreen(
@@ -116,7 +115,7 @@ private fun LicenseNumberSection(
     onLicenseNumberChange: (String) -> Unit
 ) {
     Text(
-        text = "License number",
+        text = stringResource(R.string.license_number_label),
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold
     )
@@ -139,8 +138,8 @@ private fun SearchResultContent(
     when (uiState) {
         CarCheckerUiState.Idle -> {
             StatusCard(
-                title = "Ready to search",
-                message = "Enter a valid 7 or 8 digit license number.",
+                title = stringResource(R.string.status_idle_title),
+                message = stringResource(R.string.status_idle_message),
                 emphasis = StatusEmphasis.Neutral
             )
         }
@@ -157,15 +156,15 @@ private fun SearchResultContent(
 
         CarCheckerUiState.NotFound -> {
             StatusCard(
-                title = "Vehicle not found",
-                message = "No vehicle was found for this license number.",
+                title = stringResource(R.string.status_not_found_title),
+                message = stringResource(R.string.status_not_found_message),
                 emphasis = StatusEmphasis.Warning
             )
         }
 
         is CarCheckerUiState.Error -> {
             StatusCard(
-                title = "Unable to complete the search",
+                title = stringResource(R.string.status_error_title),
                 message = uiState.message,
                 emphasis = StatusEmphasis.Error
             )
@@ -200,7 +199,7 @@ private fun LoadingContent() {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Checking vehicle details...",
+                text = stringResource(R.string.loading_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
@@ -208,7 +207,7 @@ private fun LoadingContent() {
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Retrieving vehicle and parking badge information",
+                text = stringResource(R.string.loading_message),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -246,7 +245,7 @@ private fun VehicleResultCard(
             ) {
                 Column {
                     Text(
-                        text = "Vehicle Found",
+                        text = stringResource(R.string.result_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -254,14 +253,14 @@ private fun VehicleResultCard(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "Data received successfully",
+                        text = stringResource(R.string.result_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
                 StatusPill(
-                    text = "Found",
+                    text = stringResource(R.string.status_pill_found),
                     positive = true
                 )
             }
@@ -274,24 +273,26 @@ private fun VehicleResultCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            val unknownValue = stringResource(R.string.unknown_value)
+
             VehicleDetailRow(
                 icon = Icons.Rounded.Factory,
-                label = "Manufacturer",
-                value = carDetails.manufacturer.ifBlank {
-                    "Unknown"
-                }
+                label = stringResource(R.string.label_manufacturer),
+                value = carDetails.manufacturer.ifBlank { unknownValue }
             )
 
             VehicleColorRow(
-                colorName = carDetails.color.ifBlank {
-                    "Unknown"
-                }
+                colorName = carDetails.color.ifBlank { unknownValue }
             )
 
             VehicleDetailRow(
                 icon = Icons.Rounded.DirectionsCar,
-                label = "Vehicle type",
-                value = carDetails.vehicleType.toDisplayVehicleType()
+                label = stringResource(R.string.label_vehicle_type),
+                value = carDetails.vehicleType.toDisplayVehicleType(
+                    privateLabel = stringResource(R.string.vehicle_type_private),
+                    commercialLabel = stringResource(R.string.vehicle_type_commercial),
+                    unknownLabel = unknownValue
+                )
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -398,7 +399,7 @@ private fun VehicleColorRow(
             modifier = Modifier.padding(start = 14.dp)
         ) {
             Text(
-                text = "Color",
+                text = stringResource(R.string.label_color),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -491,7 +492,7 @@ private fun DisabledBadgeSection(
                 modifier = Modifier.padding(start = 12.dp)
             ) {
                 Text(
-                    text = "Disabled parking badge",
+                    text = stringResource(R.string.disabled_badge_title),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -500,9 +501,9 @@ private fun DisabledBadgeSection(
 
                 Text(
                     text = if (hasDisabledBadge) {
-                        "Badge registered for this vehicle"
+                        stringResource(R.string.disabled_badge_present)
                     } else {
-                        "No registered badge was found"
+                        stringResource(R.string.disabled_badge_absent)
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -511,7 +512,11 @@ private fun DisabledBadgeSection(
         }
 
         StatusPill(
-            text = if (hasDisabledBadge) "Yes" else "No",
+            text = if (hasDisabledBadge) {
+                stringResource(R.string.answer_yes)
+            } else {
+                stringResource(R.string.answer_no)
+            },
             positive = hasDisabledBadge
         )
     }
@@ -623,12 +628,16 @@ private enum class StatusEmphasis {
 }
 
 /**
- * Converts the API vehicle type code into a user-friendly label.
+ * Converts the API vehicle type code ("P"/"C") into a user-friendly label.
  */
-private fun String.toDisplayVehicleType(): String {
+private fun String.toDisplayVehicleType(
+    privateLabel: String,
+    commercialLabel: String,
+    unknownLabel: String
+): String {
     return when (uppercase()) {
-        "P" -> "Private"
-        "C" -> "Commercial"
-        else -> ifBlank { "Unknown" }
+        "P" -> privateLabel
+        "C" -> commercialLabel
+        else -> ifBlank { unknownLabel }
     }
 }
