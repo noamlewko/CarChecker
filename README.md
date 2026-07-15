@@ -148,13 +148,3 @@ Further improvements worth considering beyond the scope of this assignment:
 
 - Dependency injection (Hilt/Koin) instead of the manual `ViewModelProvider.Factory`.
 - Broader Compose UI test coverage for the other search states.
-
----
-
-## Example
-
-A valid vehicle number for testing:
-
-```
-28367902
-```
