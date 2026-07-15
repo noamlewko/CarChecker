@@ -14,9 +14,12 @@
     <!-- Status states -->
     <string name="status_idle_title">Ready to search</string>
     <string name="status_idle_message">Enter a valid 7 or 8 digit license number.</string>
+    <string name="status_typing_title">Keep going</string>
+    <string name="status_typing_message">%1$d more digit(s) needed.</string>
     <string name="status_not_found_title">Vehicle not found</string>
     <string name="status_not_found_message">No vehicle was found for this license number.</string>
     <string name="status_error_title">Unable to complete the search</string>
+    <string name="retry_button_label">Try again</string>
 
     <!-- Loading -->
     <string name="loading_title">Checking vehicle details...</string>
@@ -39,4 +42,9 @@
     <string name="disabled_badge_absent">No registered badge was found</string>
     <string name="answer_yes">Yes</string>
     <string name="answer_no">No</string>
+
+    <!-- Background sync -->
+    <string name="sync_channel_name">Vehicle data sync</string>
+    <string name="sync_notification_title">Updating saved vehicles</string>
+    <string name="sync_notification_text">Refreshing previously checked vehicles</string>
 </resources>

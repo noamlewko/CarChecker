@@ -6,6 +6,8 @@
 - [x] Display car information
 - [x] Show loading
 - [x] Show error state
+- [x] Retry action on error
+- [x] License plate-style auto-formatting while typing
 
 ## Architecture
 - [x] Create ViewModel
@@ -24,14 +26,14 @@
 ## Tests
 - [x] ViewModel tests
 - [x] Repository tests
-- [ ] Compose UI tests
+- [x] Compose UI tests
 
 ## Polish
 - [x] README
 - [x] Final UI improvements
 
-## Bonus (not included in this submission)
-- [ ] Offline-first architecture with Room
-- [ ] Daily sync via foreground service
-
-Descoped due to time constraints. See "Possible Next Steps" in README for the intended approach.
+## Bonus: offline-first architecture
+- [x] Room database for cached vehicles
+- [x] Repository serves cached results first, falls back to network
+- [x] Daily refresh via WorkManager + foreground service
+- [x] Verified working with the network disabled on-device

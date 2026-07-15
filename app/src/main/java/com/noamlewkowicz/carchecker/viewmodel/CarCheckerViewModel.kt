@@ -1,7 +1,11 @@
 package com.noamlewkowicz.carchecker.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.noamlewkowicz.carchecker.data.network.RetrofitClient
 import com.noamlewkowicz.carchecker.data.repository.CarRepository
 import kotlinx.coroutines.CancellationException
@@ -53,27 +57,33 @@ class CarCheckerViewModel(
     }
 
     /**
-     * Updates the license number while allowing only digits and separators.
+     * Updates the license number, keeping only digits and automatically
+     * inserting dashes in the same positions as a real Israeli license
+     * plate (2 digits, 3 digits, then the rest), so the field looks like an
+     * actual plate as the user types.
      */
     fun onLicenseNumberChanged(value: String) {
-        val sanitizedValue = buildString {
-            var digitCount = 0
+        val digitsOnly = value
+            .filter(Char::isDigit)
+            .take(MAX_LICENSE_DIGITS)
 
-            value.forEach { character ->
-                when {
-                    character.isDigit() && digitCount < MAX_LICENSE_DIGITS -> {
-                        append(character)
-                        digitCount++
-                    }
+        _licenseNumber.value = digitsOnly.formatAsLicensePlate()
+    }
 
-                    character == '-' -> {
-                        append(character)
-                    }
-                }
+    /**
+     * Repeats the last search for the current license number. Used when the
+     * user taps "Try again" after a failed search, so they do not have to
+     * retype the number just to trigger a new attempt.
+     */
+    fun retrySearch() {
+        val normalizedLicenseNumber =
+            _licenseNumber.value.filter(Char::isDigit)
+
+        if (normalizedLicenseNumber.isValidLicenseNumber()) {
+            viewModelScope.launch {
+                searchCar(normalizedLicenseNumber)
             }
         }
-
-        _licenseNumber.value = sanitizedValue
     }
 
     /**
@@ -141,9 +151,41 @@ class CarCheckerViewModel(
         return length == 7 || length == 8
     }
 
+    /**
+     * Inserts dashes after the second and fifth digit, matching the layout
+     * of a real Israeli license plate (for example "28-367-902").
+     */
+    private fun String.formatAsLicensePlate(): String {
+        val digits = this
+
+        return buildString {
+            digits.forEachIndexed { index, character ->
+                if (index == 2 || index == 5) {
+                    append('-')
+                }
+
+                append(character)
+            }
+        }
+    }
 
     private companion object {
         const val SEARCH_DEBOUNCE_MILLIS = 500L
         const val MAX_LICENSE_DIGITS = 8
     }
 }
+
+/**
+ * Builds a [CarCheckerViewModel] backed by the local cache, so that
+ * previously searched vehicles are available offline. Kept outside the
+ * class so the class itself still has a simple, context-free default
+ * constructor for tests and previews.
+ */
+fun carCheckerViewModelFactory(context: Context): ViewModelProvider.Factory =
+    viewModelFactory {
+        initializer {
+            CarCheckerViewModel(
+                repository = CarRepository.createOfflineFirst(context)
+            )
+        }
+    }

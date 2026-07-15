@@ -4,19 +4,24 @@ CarChecker is a single-screen Android application that retrieves vehicle informa
 
 The application starts searching automatically after the user enters a valid 7 or 8 digit license number. No search button is required.
 
+The application is offline-first: once a vehicle has been searched, its details are cached locally and remain available even without a network connection.
+
 ---
 
 ## Features
 
 - Automatic search while typing
 - Parallel API requests using Kotlin Coroutines
+- License plate-style input that auto-formats digits with dashes as you type
 - Vehicle manufacturer
 - Vehicle color
 - Vehicle type (P/C)
 - Disabled parking badge status
-- Loading, Success, Not Found and Error states
+- Loading, Success, Not Found and Error states, with a retry action on error
+- Offline-first caching: previously searched vehicles remain available without a network connection
+- Daily background refresh of cached vehicles via a foreground service
 - Israeli license plate styled input
-- Unit tests
+- Unit tests and a Compose UI test
 
 ---
 
@@ -31,12 +36,16 @@ CarCheckerViewModel
         ↓
 CarRepository
         ↓
-DataGovApiService
-        ↓
+    ┌───┴────┐
+    ↓        ↓
+DataGovApiService   Room database (CarDao)
+    ↓
 DataGov API
 ```
 
-The repository performs both API requests in parallel using `async` and `await`.
+The repository performs both API requests in parallel using `async` and `await`. When a local database is available, it is checked first: a cache hit returns instantly without a network call, and a cache miss falls back to the network and stores the result for next time.
+
+A daily `WorkManager` job, promoted to a foreground service, refreshes every previously searched vehicle in the background.
 
 ---
 
@@ -51,8 +60,11 @@ The repository performs both API requests in parallel using `async` and `await`.
 - Retrofit
 - OkHttp
 - Gson
+- Room
+- WorkManager
 - JUnit
 - kotlinx-coroutines-test
+- Compose UI testing
 
 ---
 
@@ -85,15 +97,25 @@ Example license number:
 The project includes unit tests for:
 
 - License number validation
-- License number formatting
+- License number formatting (auto-inserted dashes)
 - Repository success scenario
 - Repository "vehicle not found" scenario
 - Repository disabled badge detection
+- Offline-first caching: cache hit skips the network, cache miss fetches and stores
+- Daily refresh updating every cached vehicle
 
-Run all tests with:
+It also includes a Compose UI test verifying the error state and its retry button.
+
+Run unit tests with:
 
 ```bash
 ./gradlew testDebugUnitTest
+```
+
+Run the Compose UI test with:
+
+```bash
+./gradlew connectedDebugAndroidTest
 ```
 
 ---
@@ -110,18 +132,22 @@ The application handles:
 
 ---
 
+## Offline-First Bonus
+
+Implemented in full:
+
+- `CarDetailsEntity` / `CarDao` / `CarDatabase`: a Room database that caches every vehicle that has been searched, keyed by license number.
+- `CarRepository`: serves cached results instantly when available, and falls back to the network otherwise, caching the result afterward.
+- `CarSyncWorker` / `CarSyncScheduler`: a daily `WorkManager` job, promoted to a foreground service via `setForeground`, that refreshes every cached vehicle from the network once a day.
+
+This was verified on-device by searching a vehicle with the network on, then disabling all connectivity and confirming the same vehicle still returns its cached result while a never-searched vehicle correctly reports it cannot reach the server.
+
 ## Possible Next Steps
 
-The assignment's bonus (offline-first architecture) was not included in this submission due to time constraints. The intended approach:
+Further improvements worth considering beyond the scope of this assignment:
 
-- Cache each looked-up vehicle in a Room database, keyed by license number.
-- Serve cached results first, then refresh from the API.
-- Use a WorkManager periodic job promoted to a foreground service to refresh previously-searched vehicles once a day.
-
-Other improvements worth considering:
-
-- Compose UI tests
-- Dependency injection (Hilt/Koin)
+- Dependency injection (Hilt/Koin) instead of the manual `ViewModelProvider.Factory`.
+- Broader Compose UI test coverage for the other search states.
 
 ---
 

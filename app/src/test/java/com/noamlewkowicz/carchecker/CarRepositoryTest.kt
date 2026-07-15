@@ -1,5 +1,7 @@
 package com.noamlewkowicz.carchecker
 
+import com.noamlewkowicz.carchecker.data.local.CarDao
+import com.noamlewkowicz.carchecker.data.local.CarDetailsEntity
 import com.noamlewkowicz.carchecker.data.model.DataGovResponse
 import com.noamlewkowicz.carchecker.data.model.DataGovResult
 import com.noamlewkowicz.carchecker.data.model.DisabledBadgeRecordDto
@@ -108,6 +110,152 @@ class CarRepositoryTest {
             }
         }
 
+    @Test
+    fun `getCarDetails returns cached vehicle without calling the network`() =
+        runTest {
+            val apiService = FakeDataGovApiService(
+                vehicleRecords = listOf(
+                    createVehicleRecord()
+                ),
+                disabledBadgeRecords = emptyList()
+            )
+
+            val carDao = FakeCarDao()
+            carDao.upsert(
+                CarDetailsEntity(
+                    licenseNumber = TEST_LICENSE_NUMBER.toString(),
+                    manufacturer = "Cached manufacturer",
+                    color = "Cached color",
+                    vehicleType = "Cached type",
+                    hasDisabledBadge = true,
+                    lastUpdatedEpochMillis = 0L
+                )
+            )
+
+            val repository = CarRepository(
+                apiService = apiService,
+                carDao = carDao
+            )
+
+            val result = repository.getCarDetails(
+                licenseNumber = TEST_LICENSE_NUMBER.toString()
+            )
+
+            assertEquals(
+                "Cached manufacturer",
+                result.manufacturer
+            )
+            assertEquals(
+                0,
+                apiService.vehicleCallCount
+            )
+        }
+
+    @Test
+    fun `getCarDetails caches the result after fetching from the network`() =
+        runTest {
+            val apiService = FakeDataGovApiService(
+                vehicleRecords = listOf(
+                    createVehicleRecord()
+                ),
+                disabledBadgeRecords = emptyList()
+            )
+
+            val carDao = FakeCarDao()
+
+            val repository = CarRepository(
+                apiService = apiService,
+                carDao = carDao
+            )
+
+            val result = repository.getCarDetails(
+                licenseNumber = TEST_LICENSE_NUMBER.toString()
+            )
+
+            assertEquals(
+                "Skoda",
+                result.manufacturer
+            )
+            assertEquals(
+                1,
+                apiService.vehicleCallCount
+            )
+
+            val cachedVehicle = carDao.getByLicenseNumber(
+                licenseNumber = TEST_LICENSE_NUMBER.toString()
+            )
+
+            assertEquals(
+                "Skoda",
+                cachedVehicle?.manufacturer
+            )
+        }
+
+    @Test
+    fun `refreshCachedVehicles updates every cached vehicle from the network`() =
+        runTest {
+            val apiService = FakeDataGovApiService(
+                vehicleRecords = listOf(
+                    createVehicleRecord()
+                ),
+                disabledBadgeRecords = emptyList()
+            )
+
+            val carDao = FakeCarDao()
+            carDao.upsert(
+                CarDetailsEntity(
+                    licenseNumber = TEST_LICENSE_NUMBER.toString(),
+                    manufacturer = "Outdated manufacturer",
+                    color = "Outdated color",
+                    vehicleType = "Outdated type",
+                    hasDisabledBadge = false,
+                    lastUpdatedEpochMillis = 0L
+                )
+            )
+
+            val repository = CarRepository(
+                apiService = apiService,
+                carDao = carDao
+            )
+
+            repository.refreshCachedVehicles()
+
+            val refreshedVehicle = carDao.getByLicenseNumber(
+                licenseNumber = TEST_LICENSE_NUMBER.toString()
+            )
+
+            assertEquals(
+                "Skoda",
+                refreshedVehicle?.manufacturer
+            )
+            assertEquals(
+                1,
+                apiService.vehicleCallCount
+            )
+        }
+
+    @Test
+    fun `refreshCachedVehicles does nothing without a local cache`() =
+        runTest {
+            val apiService = FakeDataGovApiService(
+                vehicleRecords = listOf(
+                    createVehicleRecord()
+                ),
+                disabledBadgeRecords = emptyList()
+            )
+
+            val repository = CarRepository(
+                apiService = apiService
+            )
+
+            repository.refreshCachedVehicles()
+
+            assertEquals(
+                0,
+                apiService.vehicleCallCount
+            )
+        }
+
     /**
      * Creates a reusable vehicle response for repository tests.
      */
@@ -127,17 +275,25 @@ class CarRepositoryTest {
 
 /**
  * Provides predictable API responses without performing real network calls.
+ *
+ * Tracks how many times [getVehicle] was called, so tests can verify the
+ * network was skipped when a cached result should have been used instead.
  */
 private class FakeDataGovApiService(
     private val vehicleRecords: List<VehicleRecordDto>,
     private val disabledBadgeRecords: List<DisabledBadgeRecordDto>
 ) : DataGovApiService {
 
+    var vehicleCallCount = 0
+        private set
+
     override suspend fun getVehicle(
         resourceId: String,
         filters: String,
         limit: Int
     ): DataGovResponse<VehicleRecordDto> {
+        vehicleCallCount++
+
         return DataGovResponse(
             success = true,
             result = DataGovResult(
@@ -157,5 +313,28 @@ private class FakeDataGovApiService(
                 records = disabledBadgeRecords
             )
         )
+    }
+}
+
+/**
+ * An in-memory stand-in for [CarDao], used so repository tests can verify
+ * caching behavior without touching a real database.
+ */
+private class FakeCarDao : CarDao {
+
+    private val storage = mutableMapOf<String, CarDetailsEntity>()
+
+    override suspend fun upsert(carDetails: CarDetailsEntity) {
+        storage[carDetails.licenseNumber] = carDetails
+    }
+
+    override suspend fun getByLicenseNumber(
+        licenseNumber: String
+    ): CarDetailsEntity? {
+        return storage[licenseNumber]
+    }
+
+    override suspend fun getAll(): List<CarDetailsEntity> {
+        return storage.values.toList()
     }
 }

@@ -1,5 +1,10 @@
 package com.noamlewkowicz.carchecker.ui.screen
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -15,7 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DirectionsCar
-import androidx.compose.material.icons.rounded.Factory
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -44,13 +50,18 @@ import com.noamlewkowicz.carchecker.ui.components.CarCheckerHeader
 import com.noamlewkowicz.carchecker.ui.components.LicensePlateTextField
 import com.noamlewkowicz.carchecker.viewmodel.CarCheckerUiState
 import com.noamlewkowicz.carchecker.viewmodel.CarCheckerViewModel
+import com.noamlewkowicz.carchecker.viewmodel.carCheckerViewModelFactory
 
 /**
  * Connects the screen to its ViewModel and collects lifecycle-aware state.
  */
 @Composable
 fun CarCheckerRoute(
-    viewModel: CarCheckerViewModel = viewModel()
+    viewModel: CarCheckerViewModel = viewModel(
+        factory = carCheckerViewModelFactory(
+            context = LocalContext.current.applicationContext
+        )
+    )
 ) {
     val licenseNumber by
     viewModel.licenseNumber.collectAsStateWithLifecycle()
@@ -61,7 +72,8 @@ fun CarCheckerRoute(
     CarCheckerScreen(
         licenseNumber = licenseNumber,
         uiState = uiState,
-        onLicenseNumberChange = viewModel::onLicenseNumberChanged
+        onLicenseNumberChange = viewModel::onLicenseNumberChanged,
+        onRetry = viewModel::retrySearch
     )
 }
 
@@ -75,7 +87,8 @@ fun CarCheckerRoute(
 fun CarCheckerScreen(
     licenseNumber: String,
     uiState: CarCheckerUiState,
-    onLicenseNumberChange: (String) -> Unit
+    onLicenseNumberChange: (String) -> Unit,
+    onRetry: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -100,7 +113,9 @@ fun CarCheckerScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             SearchResultContent(
-                uiState = uiState
+                licenseNumber = licenseNumber,
+                uiState = uiState,
+                onRetry = onRetry
             )
         }
     }
@@ -133,44 +148,73 @@ private fun LicenseNumberSection(
  */
 @Composable
 private fun SearchResultContent(
-    uiState: CarCheckerUiState
+    licenseNumber: String,
+    uiState: CarCheckerUiState,
+    onRetry: () -> Unit
 ) {
-    when (uiState) {
-        CarCheckerUiState.Idle -> {
-            StatusCard(
-                title = stringResource(R.string.status_idle_title),
-                message = stringResource(R.string.status_idle_message),
-                emphasis = StatusEmphasis.Neutral
-            )
-        }
+    // Crossfades between states instead of popping in abruptly.
+    AnimatedContent(
+        targetState = uiState,
+        transitionSpec = {
+            fadeIn(animationSpec = tween(220)) togetherWith
+                fadeOut(animationSpec = tween(220))
+        },
+        label = "search_result_content"
+    ) { targetUiState ->
+        when (targetUiState) {
+            CarCheckerUiState.Idle -> {
+                val typedDigitCount =
+                    licenseNumber.count(Char::isDigit)
 
-        CarCheckerUiState.Loading -> {
-            LoadingContent()
-        }
+                if (typedDigitCount in 1 until MIN_LICENSE_DIGITS) {
+                    StatusCard(
+                        title = stringResource(R.string.status_typing_title),
+                        message = stringResource(
+                            R.string.status_typing_message,
+                            MIN_LICENSE_DIGITS - typedDigitCount
+                        ),
+                        emphasis = StatusEmphasis.Neutral
+                    )
+                } else {
+                    StatusCard(
+                        title = stringResource(R.string.status_idle_title),
+                        message = stringResource(R.string.status_idle_message),
+                        emphasis = StatusEmphasis.Neutral
+                    )
+                }
+            }
 
-        is CarCheckerUiState.Success -> {
-            VehicleResultCard(
-                carDetails = uiState.carDetails
-            )
-        }
+            CarCheckerUiState.Loading -> {
+                LoadingContent()
+            }
 
-        CarCheckerUiState.NotFound -> {
-            StatusCard(
-                title = stringResource(R.string.status_not_found_title),
-                message = stringResource(R.string.status_not_found_message),
-                emphasis = StatusEmphasis.Warning
-            )
-        }
+            is CarCheckerUiState.Success -> {
+                VehicleResultCard(
+                    carDetails = targetUiState.carDetails
+                )
+            }
 
-        is CarCheckerUiState.Error -> {
-            StatusCard(
-                title = stringResource(R.string.status_error_title),
-                message = uiState.message,
-                emphasis = StatusEmphasis.Error
-            )
+            CarCheckerUiState.NotFound -> {
+                StatusCard(
+                    title = stringResource(R.string.status_not_found_title),
+                    message = stringResource(R.string.status_not_found_message),
+                    emphasis = StatusEmphasis.Warning
+                )
+            }
+
+            is CarCheckerUiState.Error -> {
+                StatusCard(
+                    title = stringResource(R.string.status_error_title),
+                    message = targetUiState.message,
+                    emphasis = StatusEmphasis.Error,
+                    onRetry = onRetry
+                )
+            }
         }
     }
 }
+
+private const val MIN_LICENSE_DIGITS = 7
 
 /**
  * Displays an indeterminate indicator while both API requests are running.
@@ -223,14 +267,23 @@ private fun LoadingContent() {
 private fun VehicleResultCard(
     carDetails: CarDetails
 ) {
+    // A very subtle blue tint hints that this vehicle has a disabled
+    // parking badge. The badge itself and its "Yes" pill stay green, since
+    // green is what communicates the positive answer.
+    val containerColor = if (carDetails.hasDisabledBadge) {
+        Color(0xFFF6F9FD)
+    } else {
+        Color.White
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = containerColor
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 6.dp
+            defaultElevation = 10.dp
         )
     ) {
         Column(
@@ -275,10 +328,8 @@ private fun VehicleResultCard(
 
             val unknownValue = stringResource(R.string.unknown_value)
 
-            VehicleDetailRow(
-                icon = Icons.Rounded.Factory,
-                label = stringResource(R.string.label_manufacturer),
-                value = carDetails.manufacturer.ifBlank { unknownValue }
+            ManufacturerRow(
+                manufacturerName = carDetails.manufacturer.ifBlank { unknownValue }
             )
 
             VehicleColorRow(
@@ -305,13 +356,17 @@ private fun VehicleResultCard(
 }
 
 /**
- * Displays one vehicle detail with an identifying icon.
+ * Displays one vehicle detail as a badge next to a label and value.
+ *
+ * Shared by every detail row so the label/value layout is defined once;
+ * only the badge itself (an icon, a monogram, or a color swatch) differs
+ * between rows.
  */
 @Composable
-private fun VehicleDetailRow(
-    icon: ImageVector,
+private fun DetailRow(
     label: String,
-    value: String
+    value: String,
+    badge: @Composable () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -319,22 +374,7 @@ private fun VehicleDetailRow(
             .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Surface(
-            modifier = Modifier.size(42.dp),
-            shape = RoundedCornerShape(13.dp),
-            color = MaterialTheme.colorScheme.primaryContainer
-        ) {
-            Box(
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(22.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
+        badge()
 
         Column(
             modifier = Modifier.padding(start = 14.dp)
@@ -359,59 +399,132 @@ private fun VehicleDetailRow(
 }
 
 /**
- * Displays the vehicle color with a matching visual indicator.
+ * A 42dp rounded badge with a plain background, used to frame an icon or a
+ * monogram. The color swatch badge does not use this, since for that row
+ * the badge's entire background is the answer.
+ */
+@Composable
+private fun IconBadge(
+    backgroundColor: Color = MaterialTheme.colorScheme.primaryContainer,
+    content: @Composable () -> Unit
+) {
+    Surface(
+        modifier = Modifier.size(42.dp),
+        shape = RoundedCornerShape(13.dp),
+        color = backgroundColor
+    ) {
+        Box(
+            contentAlignment = Alignment.Center
+        ) {
+            content()
+        }
+    }
+}
+
+/**
+ * Displays one vehicle detail with an identifying icon.
+ */
+@Composable
+private fun VehicleDetailRow(
+    icon: ImageVector,
+    label: String,
+    value: String
+) {
+    DetailRow(
+        label = label,
+        value = value
+    ) {
+        IconBadge {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(22.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+/**
+ * Displays the manufacturer with a monogram badge showing its first letter
+ * on a color derived from the manufacturer's name, so different brands are
+ * visually distinguishable from one another.
+ *
+ * A stylized monogram is used instead of a specific brand logo, since
+ * reproducing real manufacturer trademarks is avoided.
+ */
+@Composable
+private fun ManufacturerRow(
+    manufacturerName: String
+) {
+    DetailRow(
+        label = stringResource(R.string.label_manufacturer),
+        value = manufacturerName
+    ) {
+        IconBadge(
+            backgroundColor = manufacturerName.toManufacturerColor()
+        ) {
+            Text(
+                text = manufacturerName.trim().firstOrNull()
+                    ?.uppercase()
+                    .orEmpty(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White
+            )
+        }
+    }
+}
+
+/**
+ * Picks a consistent color for a manufacturer name from a small palette, so
+ * the same manufacturer always gets the same badge color across searches.
+ */
+private fun String.toManufacturerColor(): Color {
+    if (isBlank()) {
+        return Color(0xFF9DA4AE)
+    }
+
+    val paletteIndex = (hashCode().mod(MANUFACTURER_BADGE_COLORS.size))
+
+    return MANUFACTURER_BADGE_COLORS[paletteIndex]
+}
+
+private val MANUFACTURER_BADGE_COLORS = listOf(
+    Color(0xFF3B5BDB),
+    Color(0xFFE8590C),
+    Color(0xFF2F9E44),
+    Color(0xFFAE3EC9),
+    Color(0xFF1098AD),
+    Color(0xFFE64980),
+    Color(0xFF5C940D),
+    Color(0xFFD9480F)
+)
+
+/**
+ * Displays the vehicle color as a swatch: the whole badge is filled with
+ * the actual color, the same way the manufacturer badge shows a letter and
+ * the vehicle type badge shows an icon, so the badge itself is the answer.
  */
 @Composable
 private fun VehicleColorRow(
     colorName: String
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+    DetailRow(
+        label = stringResource(R.string.label_color),
+        value = colorName
     ) {
-        Surface(
-            modifier = Modifier.size(42.dp),
-            shape = RoundedCornerShape(13.dp),
-            color = MaterialTheme.colorScheme.primaryContainer
-        ) {
-            Box(
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .background(
-                            color = colorName.toVehicleDisplayColor(),
-                            shape = RoundedCornerShape(50)
-                        )
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.outline,
-                            shape = RoundedCornerShape(50)
-                        )
+        Box(
+            modifier = Modifier
+                .size(42.dp)
+                .clip(RoundedCornerShape(13.dp))
+                .background(colorName.toVehicleDisplayColor())
+                .border(
+                    width = 1.5.dp,
+                    color = MaterialTheme.colorScheme.outline,
+                    shape = RoundedCornerShape(13.dp)
                 )
-            }
-        }
-
-        Column(
-            modifier = Modifier.padding(start = 14.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.label_color),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(3.dp))
-
-            Text(
-                text = colorName,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
+        )
     }
 }
 
@@ -556,13 +669,15 @@ private fun StatusPill(
 }
 
 /**
- * Displays an informational, not-found, or error message.
+ * Displays an informational, not-found, or error message. When [onRetry] is
+ * provided, a "Try again" button is shown below the message.
  */
 @Composable
 private fun StatusCard(
     title: String,
     message: String,
-    emphasis: StatusEmphasis
+    emphasis: StatusEmphasis,
+    onRetry: (() -> Unit)? = null
 ) {
     val borderColor = when (emphasis) {
         StatusEmphasis.Neutral ->
@@ -614,6 +729,14 @@ private fun StatusCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            if (onRetry != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(onClick = onRetry) {
+                    Text(text = stringResource(R.string.retry_button_label))
+                }
+            }
         }
     }
 }

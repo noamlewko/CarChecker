@@ -28,19 +28,31 @@ class CarCheckerViewModelTest {
         viewModel.onLicenseNumberChanged("123456789")
 
         assertEquals(
-            "12345678",
+            "12-345-678",
             viewModel.licenseNumber.value
         )
     }
 
     @Test
-    fun `hyphens are preserved`() {
+    fun `dashes are formatted like a real license plate`() {
         val viewModel = CarCheckerViewModel()
 
-        viewModel.onLicenseNumberChanged("28-367-902")
+        viewModel.onLicenseNumberChanged("28367902")
 
         assertEquals(
             "28-367-902",
+            viewModel.licenseNumber.value
+        )
+    }
+
+    @Test
+    fun `dashes appear progressively while typing`() {
+        val viewModel = CarCheckerViewModel()
+
+        viewModel.onLicenseNumberChanged("28367")
+
+        assertEquals(
+            "28-367",
             viewModel.licenseNumber.value
         )
     }

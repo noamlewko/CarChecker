@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -46,6 +47,10 @@ fun CarCheckerHeader() {
                     )
                 )
             )
+            // Keeps the header content below the status bar / camera
+            // cutout, while the gradient background still extends behind
+            // it for an edge-to-edge look.
+            .statusBarsPadding()
             .padding(
                 horizontal = 20.dp,
                 vertical = 24.dp
@@ -54,7 +59,10 @@ fun CarCheckerHeader() {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+            horizontalArrangement = Arrangement.spacedBy(
+                space = 14.dp,
+                alignment = Alignment.CenterHorizontally
+            )
         ) {
             Box(
                 modifier = Modifier
