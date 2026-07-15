@@ -1,5 +1,12 @@
 package com.noamlewkowicz.carchecker.ui.screen
 
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.DirectionsCar
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.rounded.Factory
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +45,7 @@ import com.noamlewkowicz.carchecker.data.model.CarDetails
 import com.noamlewkowicz.carchecker.viewmodel.CarCheckerUiState
 import com.noamlewkowicz.carchecker.viewmodel.CarCheckerViewModel
 import com.noamlewkowicz.carchecker.ui.components.LicensePlateTextField
+import com.noamlewkowicz.carchecker.ui.components.CarCheckerHeader
 /**
  * Connects the screen to its ViewModel and collects lifecycle-aware state.
  */
@@ -70,26 +78,21 @@ fun CarCheckerScreen(
     uiState: CarCheckerUiState,
     onLicenseNumberChange: (String) -> Unit
 ) {
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                MaterialTheme.colorScheme.surface
-            )
+            .background(Color(0xFFF5F7FB))
     ) {
+        CarCheckerHeader()
+
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(
                     horizontal = 20.dp,
-                    vertical = 28.dp
-                ),
-            verticalArrangement = Arrangement.Top
+                    vertical = 24.dp
+                )
         ) {
-            ScreenHeader()
-
-            Spacer(modifier = Modifier.height(28.dp))
-
             LicenseNumberSection(
                 licenseNumber = licenseNumber,
                 onLicenseNumberChange = onLicenseNumberChange
@@ -102,27 +105,6 @@ fun CarCheckerScreen(
             )
         }
     }
-}
-
-/**
- * Displays the screen title and a short explanation.
- */
-@Composable
-private fun ScreenHeader() {
-    Text(
-        text = "Car Checker",
-        style = MaterialTheme.typography.headlineLarge,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary
-    )
-
-    Spacer(modifier = Modifier.height(6.dp))
-
-    Text(
-        text = "Enter a license number to check vehicle information",
-        style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
 }
 
 /**
@@ -244,13 +226,12 @@ private fun VehicleResultCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor =
-                MaterialTheme.colorScheme.surfaceContainer
+            containerColor = Color.White
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 5.dp
+            defaultElevation = 6.dp
         )
     ) {
         Column(
@@ -265,7 +246,7 @@ private fun VehicleResultCard(
             ) {
                 Column {
                     Text(
-                        text = "Vehicle information",
+                        text = "Vehicle Found",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -291,114 +272,243 @@ private fun VehicleResultCard(
                 color = MaterialTheme.colorScheme.outlineVariant
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             VehicleDetailRow(
+                icon = Icons.Rounded.Factory,
                 label = "Manufacturer",
                 value = carDetails.manufacturer.ifBlank {
                     "Unknown"
                 }
             )
 
-            VehicleDetailRow(
-                label = "Color",
-                value = carDetails.color.ifBlank {
+            VehicleColorRow(
+                colorName = carDetails.color.ifBlank {
                     "Unknown"
                 }
             )
 
             VehicleDetailRow(
+                icon = Icons.Rounded.DirectionsCar,
                 label = "Vehicle type",
-                value = carDetails.vehicleType.ifBlank {
-                    "Unknown"
-                }
+                value = carDetails.vehicleType.toDisplayVehicleType()
             )
 
-            HorizontalDivider(
-                modifier = Modifier.padding(
-                    vertical = 10.dp
-                ),
-                color = MaterialTheme.colorScheme.outlineVariant
-            )
+            Spacer(modifier = Modifier.height(10.dp))
 
             DisabledBadgeSection(
-                hasDisabledBadge =
-                    carDetails.hasDisabledBadge
+                hasDisabledBadge = carDetails.hasDisabledBadge
             )
         }
     }
 }
 
 /**
- * Displays one vehicle detail as a clearly separated label-value pair.
+ * Displays one vehicle detail with an identifying icon.
  */
 @Composable
 private fun VehicleDetailRow(
+    icon: ImageVector,
     label: String,
     value: String
 ) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 10.dp)
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Surface(
+            modifier = Modifier.size(42.dp),
+            shape = RoundedCornerShape(13.dp),
+            color = MaterialTheme.colorScheme.primaryContainer
+        ) {
+            Box(
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Column(
+            modifier = Modifier.padding(start = 14.dp)
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
+            Spacer(modifier = Modifier.height(3.dp))
+
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 
 /**
- * Displays the disabled parking badge result as a highlighted section.
+ * Displays the vehicle color with a matching visual indicator.
+ */
+@Composable
+private fun VehicleColorRow(
+    colorName: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Surface(
+            modifier = Modifier.size(42.dp),
+            shape = RoundedCornerShape(13.dp),
+            color = MaterialTheme.colorScheme.primaryContainer
+        ) {
+            Box(
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .background(
+                            color = colorName.toVehicleDisplayColor(),
+                            shape = RoundedCornerShape(50)
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.outline,
+                            shape = RoundedCornerShape(50)
+                        )
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier.padding(start = 14.dp)
+        ) {
+            Text(
+                text = "Color",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(3.dp))
+
+            Text(
+                text = colorName,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
+/**
+ * Maps the API vehicle color description to a representative UI color.
+ */
+private fun String.toVehicleDisplayColor(): Color {
+    val normalizedColor = lowercase()
+
+    return when {
+        "שחור" in normalizedColor ||
+                "black" in normalizedColor -> Color(0xFF202124)
+
+        "לבן" in normalizedColor ||
+                "white" in normalizedColor -> Color.White
+
+        "כסף" in normalizedColor ||
+                "כסוף" in normalizedColor ||
+                "silver" in normalizedColor -> Color(0xFFB7BDC5)
+
+        "אפור" in normalizedColor ||
+                "gray" in normalizedColor ||
+                "grey" in normalizedColor -> Color(0xFF747B85)
+
+        "כחול" in normalizedColor ||
+                "blue" in normalizedColor -> Color(0xFF3267B2)
+
+        "אדום" in normalizedColor ||
+                "red" in normalizedColor -> Color(0xFFC63D42)
+
+        "ירוק" in normalizedColor ||
+                "green" in normalizedColor -> Color(0xFF3D7B58)
+
+        "צהוב" in normalizedColor ||
+                "yellow" in normalizedColor -> Color(0xFFF4CF45)
+
+        "כתום" in normalizedColor ||
+                "orange" in normalizedColor -> Color(0xFFE68238)
+
+        "חום" in normalizedColor ||
+                "brown" in normalizedColor -> Color(0xFF795548)
+
+        else -> Color(0xFF9DA4AE)
+    }
+}
+
+/**
+ * Displays the disabled parking badge result as a prominent status row.
  */
 @Composable
 private fun DisabledBadgeSection(
     hasDisabledBadge: Boolean
 ) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(18.dp))
             .background(
                 if (hasDisabledBadge) {
-                    MaterialTheme.colorScheme.primaryContainer
+                    Color(0xFFE9F9EC)
                 } else {
                     MaterialTheme.colorScheme.surfaceVariant
                 }
             )
-            .padding(16.dp)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(
-            text = "Disabled parking badge",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "♿",
+                style = MaterialTheme.typography.headlineSmall
+            )
 
-        Spacer(modifier = Modifier.height(4.dp))
+            Column(
+                modifier = Modifier.padding(start = 12.dp)
+            ) {
+                Text(
+                    text = "Disabled parking badge",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
 
-        Text(
-            text = if (hasDisabledBadge) {
-                "A valid badge was found for this vehicle."
-            } else {
-                "No badge was found for this vehicle."
-            },
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+                Spacer(modifier = Modifier.height(3.dp))
 
-        Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = if (hasDisabledBadge) {
+                        "Badge registered for this vehicle"
+                    } else {
+                        "No registered badge was found"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
 
         StatusPill(
             text = if (hasDisabledBadge) "Yes" else "No",
@@ -418,7 +528,7 @@ private fun StatusPill(
     Surface(
         shape = RoundedCornerShape(50),
         color = if (positive) {
-            MaterialTheme.colorScheme.primary
+            Color(0xFF22C55E)
         } else {
             MaterialTheme.colorScheme.secondaryContainer
         }
@@ -510,4 +620,15 @@ private enum class StatusEmphasis {
     Neutral,
     Warning,
     Error
+}
+
+/**
+ * Converts the API vehicle type code into a user-friendly label.
+ */
+private fun String.toDisplayVehicleType(): String {
+    return when (uppercase()) {
+        "P" -> "Private"
+        "C" -> "Commercial"
+        else -> ifBlank { "Unknown" }
+    }
 }
