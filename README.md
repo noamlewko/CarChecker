@@ -103,6 +103,8 @@ The project includes unit tests for:
 - Repository disabled badge detection
 - Offline-first caching: cache hit skips the network, cache miss fetches and stores
 - Daily refresh updating every cached vehicle
+- Debounced search: rapid typing collapses into a single network search
+- A newer search cancels a still-loading previous one, so a stale result can never overwrite a fresh one
 
 It also includes a Compose UI test verifying the error state and its retry button.
 
